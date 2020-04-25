@@ -29,16 +29,16 @@ is_target()
     Return 1
   IfWinActive,ahk_class Vim ; GVIM
     Return 1
-;  IfWinActive,ahk_class SWT_Window0 ; Eclipse
-;    Return 1
+  IfWinActive,ahk_class SWT_Window0 ; Eclipse
+    Return 1
 ;   IfWinActive,ahk_class Xming X
 ;     Return 1
 ;   IfWinActive,ahk_class SunAwtFrame
 ;     Return 1
-;   IfWinActive,ahk_class Emacs ; NTEmacs
-;     Return 1  
-;   IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
-;     Return 1
+   IfWinActive,ahk_class Emacs ; NTEmacs
+     Return 1  
+   IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
+     Return 1
   Return 0
 }
 
