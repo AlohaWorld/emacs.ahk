@@ -143,6 +143,12 @@ save_buffer()
   global is_pre_x = 0
   Return
 }
+select_all() ;Bind to Ctrl-x, h
+{
+  Send, ^a
+  global is_pre_x = 0
+  Return
+}
 kill_emacs()
 {
   Send !{F4}
@@ -406,4 +412,14 @@ scroll_down()
   Else
     scroll_up()
   Return
-
+h::  ;Ctrl-x,h  bind to select_all
+  If is_target()
+    Send %A_ThisHotkey%
+  Else
+  {
+    If is_pre_x
+      select_all()
+    Else
+      Send %A_ThisHotkey%
+  }
+  Return
