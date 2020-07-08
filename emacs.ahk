@@ -149,6 +149,12 @@ select_all() ;Bind to Ctrl-x, h
   global is_pre_x = 0
   Return
 }
+kill_buffer() ;Bind to Ctrl-x,k  which will kill current tab/window
+{
+  Send, ^w
+  global is_pre_x = 0
+  Return
+}
 kill_emacs()
 {
   Send !{F4}
@@ -423,3 +429,12 @@ h::  ;Ctrl-x,h  bind to select_all
       Send %A_ThisHotkey%
   }
   Return
+k::  ;Ctrl-x, k bind to kill_buffer
+  if is_target(){
+    Send %A_ThisHotkey%
+  } else if (is_pre_x) {
+      kill_buffer()
+  } else {
+      Send %A_ThisHotkey%
+  }
+  return
