@@ -41,6 +41,8 @@ is_target()
      return 1
    IfWinActive,ahk_class VirtualConsoleClass ; ConEmu
      return 1
+   IfWinActive,ahk_class VanDyke Software - SecureCRT ; SecureCRT
+     return 1
 	 
   return 0
 }
