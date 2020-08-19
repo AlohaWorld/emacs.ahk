@@ -47,11 +47,35 @@ SetKeyDelay 0
 /**
  * @name
  */
-
-class AppFilter {
-  appList :=  {
-    "": ,
+class App {
+  appName :=""
+  appExe  :=""
+  appClass:=""
+  /** appLevel
+   * 1: Do NOT need emacs keybingdings at all
+   */
+  appLevel:=1
+  __New(aName, aExe, aClass, aLevel){
+    this.appName := aName
+	this.appExe := aExe
+	this.appClass := aClass
+	this.appLevel := aLevel
   }
+}
+class AppFilter {
+  appCygwin := new App("Cygwin", "", "ConsoleWindowClass", 1)
+  appMeadow := new App("Meadow", "", "MEADOW", 1)
+
+  appList := [
+               new App("Cygwin", "", "ConsoleWindowClass", 1),
+			   new App("Meadow", "", "MEADOW", 1)
+			 ]
+/*			 
+			     appList := {
+               "Cygwin" : new App("Cygwin", "", "ConsoleWindowClass", 1),
+			   "Meadow" : new App("Meadow", "", "MEADOW", 1)
+			  }
+*/			 
 }
 
 ; turns to be 1 when ctrl-x is pressed
