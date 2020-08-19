@@ -1,11 +1,58 @@
-;;
-;; An autohotkey script that provides emacs-like keybinding on Windows
-;;
+/**
+ * This script emulate emacs keybindings in Windows
+ *
+ * <p>This work is motivated by usi3's emacs.ahk scrpit.
+ * @see <a href="https://github.com/usi3/emacs.ahk">usi3's emacs.ahk</a>
+ * 
+ * @author <a href="mailto:aloha.world@outlook.com">Yidong Cui</a>
+ * @version 1.0.0
+ * @since 2020/08/10
+*/
+
+/**
+ * Copyright 2020 Yidong Cui
+ *
+ * <p>This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * <p>This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * <p>You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+;; Directives
+; Forces the unconditional installation of the keyboard hook.
 #InstallKeybdHook
-#UseHook
+; Forces the use of the hook to implement all or some keyboard hotkeys.
+#UseHook On
+; Enables or disables warnings for specific conditions which may indicate an
+; error, such as a typo or missing "global" declaration.
+#Warn
+
+/**
+ * TODO: Use "ListHotkeys" to show all hotkeys that current script use
+*/
 
 ; The following line is a contribution of NTEmacs wiki http://www49.atwiki.jp/ntemacs/pages/20.html
+; Sets the delay that will occur after each keystroke sent by Send or ControlSend
+; 0 for the smallest possible delay, -1 for no delay at all, leaving blank to retain the current Delay
 SetKeyDelay 0
+
+/**
+ * @name
+ */
+
+class AppFilter {
+  appList :=  {
+    "": ,
+  }
+}
 
 ; turns to be 1 when ctrl-x is pressed
 is_pre_x = 0
@@ -35,14 +82,18 @@ is_target()
 ;     return 1
 ;   IfWinActive,ahk_class SunAwtFrame
 ;     return 1
-   IfWinActive,ahk_class Emacs ; NTEmacs
-     return 1  
-   IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
-     return 1
-   IfWinActive,ahk_class VirtualConsoleClass ; ConEmu
-     return 1
-   IfWinActive,ahk_class VanDyke Software - SecureCRT ; SecureCRT
-     return 1
+  IfWinActive,ahk_class Emacs ; NTEmacs
+    return 1  
+  IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
+    return 1
+  IfWinActive,ahk_class VirtualConsoleClass ; ConEmu
+    return 1
+  IfWinActive,ahk_class VanDyke Software - SecureCRT ; SecureCRT
+    return 1
+  IfWinActive,ahk_exe Code.exe ; Visual Studio Code
+	return 1
+  If(WinActive("ahk_exe devenv.exe"))
+    return 1
 	 
   return 0
 }
@@ -59,6 +110,19 @@ delete_backward_char()
   global is_pre_spc = 0
   return
 }
+/*
+ * kill_line() is intercepted from ntemacs.ahk
+ */
+kill_line()
+{
+        global
+        is_pre_spc := 1
+        move_end_of_line()
+        Send ^c{Del}
+        is_pre_spc := 0
+}
+/** Below function is written by usi3. Now obsoleted
+
 kill_line()
 {
   Send {ShiftDown}{END}{SHIFTUP}
@@ -67,6 +131,7 @@ kill_line()
   global is_pre_spc = 0
   return
 }
+*/
 open_line()
 {
   Send {END}{Enter}{Up}
@@ -173,13 +238,17 @@ move_beginning_of_line()
     Send {HOME}
   return
 }
-move_end_of_line()
-{
+move_end_of_line() {
   global
-  if is_pre_spc
-    Send +{END}
-  Else
-    Send {END}
+  if (is_pre_spc_spc) {
+    if (WinActive("ahk_class OpusApp")) { ; Microsoft Word
+      Send +{End}+{Left}
+    } else {
+      Send +{End}
+    }
+  } else {
+    Send {End}
+  }
   return
 }
 previous_line()
