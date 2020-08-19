@@ -48,12 +48,6 @@ SetKeyDelay 0
  * @name
  */
 
-class AppFilter {
-  appList :=  {
-    "": ,
-  }
-}
-
 ; turns to be 1 when ctrl-x is pressed
 is_pre_x = 0
 ; turns to be 1 when ctrl-space is pressed
@@ -92,7 +86,7 @@ is_target()
     return 1
   IfWinActive,ahk_exe Code.exe ; Visual Studio Code
 	return 1
-  If(WinActive("ahk_exe devenv.exe"))
+  If(WinActive("ahk_exe devenv.exe")) ; Visual Studio
     return 1
 	 
   return 0
@@ -238,6 +232,10 @@ move_beginning_of_line()
     Send {HOME}
   return
 }
+/**
+ * function move_end_of_line() is intercepted from ntemacs
+ * this function added special treats about Word
+ */
 move_end_of_line() {
   global
   if (is_pre_spc_spc) {
