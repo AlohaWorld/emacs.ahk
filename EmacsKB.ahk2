@@ -30,7 +30,8 @@
 ; Forces the unconditional installation of the keyboard hook.
 #InstallKeybdHook
 ; Forces the use of the hook to implement all or some keyboard hotkeys.
-#UseHook On
+; #UseHook On ; ahk v1 use on/off
+#UseHook True
 ; Enables or disables warnings for specific conditions which may indicate an
 ; error, such as a typo or missing "global" declaration.
 #Warn
