@@ -48,29 +48,34 @@ SetKeyDelay 0
  * @name
  */
 class App {
-  appName :=""
-  appExe  :=""
-  appClass:=""
-  /** appLevel
-   * 1: Do NOT need emacs keybingdings at all
-   */
   appLevel:=1
   __New(aName, aExe, aClass, aLevel){
     this.appName := aName
 	this.appExe := aExe
 	this.appClass := aClass
+    /** appLevel
+     * 1: Do NOT need emacs keybingdings at all
+     */
 	this.appLevel := aLevel
   }
 }
 class AppFilter {
   appCygwin := new App("Cygwin", "", "ConsoleWindowClass", 1)
   appMeadow := new App("Meadow", "", "MEADOW", 1)
-/*
-  appList := [
-               App("Cygwin", "", "ConsoleWindowClass", 1),
-			   App("Meadow", "", "MEADOW", 1)
-			 ]
-*/			 
+  ; appList := [ appCygwin, appMeadow ]
+  ; The left parenthesis is used to break the line into several parts
+#LTrim
+  appList := 
+    ( Comments Join`s 
+	  [ 
+        new App("Cygwin", "", "ConsoleWindowClass", 1), 
+	    new App("Meadow", "", "MEADOW", 1)
+	  ]
+    )
+#LTrim off
+  print() {
+    MsgBox("test", "Info", "OKiconi")
+  }
 /*			 
 			     appList := {
                "Cygwin" : new App("Cygwin", "", "ConsoleWindowClass", 1),
@@ -78,6 +83,9 @@ class AppFilter {
 			  }
 */			 
 }
+
+myAppFilter := new AppFilter
+myAppFilter.print()
 
 ; turns to be 1 when ctrl-x is pressed
 is_pre_x = 0
