@@ -65,11 +65,12 @@ class App {
 class AppFilter {
   appCygwin := new App("Cygwin", "", "ConsoleWindowClass", 1)
   appMeadow := new App("Meadow", "", "MEADOW", 1)
-
+/*
   appList := [
-               new App("Cygwin", "", "ConsoleWindowClass", 1),
-			   new App("Meadow", "", "MEADOW", 1)
+               App("Cygwin", "", "ConsoleWindowClass", 1),
+			   App("Meadow", "", "MEADOW", 1)
 			 ]
+*/			 
 /*			 
 			     appList := {
                "Cygwin" : new App("Cygwin", "", "ConsoleWindowClass", 1),
