@@ -49,6 +49,9 @@ SetKeyDelay 0
  * @name
  */
 class App {
+  appName :="None"
+  appExe  :="None"
+  appClass:="None"
   appLevel:=1
   __New(aName, aExe, aClass, aLevel){
     this.appName := aName
@@ -61,72 +64,57 @@ class App {
   }
 }
 class AppFilter {
-  appCygwin := new App("Cygwin", "", "ConsoleWindowClass", 1)
-  appMeadow := new App("Meadow", "", "MEADOW", 1)
-  ; appList := [ appCygwin, appMeadow ]
-  ; The left parenthesis is used to break the line into several parts
-#LTrim
-  appList := 
-    ( Comments Join`s 
-	  [ 
-        new App("Cygwin", "", "ConsoleWindowClass", 1), 
-	    new App("Meadow", "", "MEADOW", 1)
-	  ]
-    )
-#LTrim off
+  appList := [ 
+        App.new("Cygwin", , "ConsoleWindowClass", 1), 
+	    App.new("Meadow", "", "MEADOW", 1)
+  ]
+
   print() {
-    MsgBox("test", "Info", "OKiconi")
+    for (myapp in this.appList) {
+	  str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appLevel
+	  MsgBox(str, "Info", "OK Iconi")
+	}
   }
-/*			 
-			     appList := {
-               "Cygwin" : new App("Cygwin", "", "ConsoleWindowClass", 1),
-			   "Meadow" : new App("Meadow", "", "MEADOW", 1)
-			  }
-*/			 
 }
 
-myAppFilter := new AppFilter
+myAppFilter := AppFilter.new()
 myAppFilter.print()
+; AppFilter.print()
 
 ; turns to be 1 when ctrl-x is pressed
-is_pre_x = 0
-; turns to be 1 when ctrl-space is pressed
-is_pre_spc = 0
+is_pre_x := 0
+; turns to be 1 when ctrl-space is pressed, which is in selection mode
+is_pre_spc := 0
 
 ; Applications you want to disable emacs-like keybindings
 ; (Please comment out applications you don't use)
 is_target()
 {
-  IfWinActive,ahk_class ConsoleWindowClass ; Cygwin
+  if(WinActive("ahk_class ConsoleWindowClass")) ; Cygwin
     return 1 
-  IfWinActive,ahk_class MEADOW ; Meadow
+  if(WinActive("ahk_class MEADOW")) ; Meadow
     return 1 
-  IfWinActive,ahk_class cygwin/x X rl-xterm-XTerm-0
+  if(WinActive("ahk_class cygwin/x X rl-xterm-XTerm-0"))
     return 1
-  IfWinActive,ahk_class MozillaUIWindowClass ; keysnail on Firefox
+  if(WinActive("ahk_class MozillaUIWindowClass")) ; keysnail on Firefox
     return 1
-  ; Avoid VMwareUnity with AutoHotkey
-  IfWinActive,ahk_class VMwareUnityHostWndClass
+  if(WinActive("ahk_class VMwareUnityHostWndClass")) ; Avoid VMwareUnity with AutoHotkey
     return 1
-  IfWinActive,ahk_class Vim ; GVIM
+  if(WinActive("ahk_class Vim")) ; GVIM
     return 1
-  IfWinActive,ahk_class SWT_Window0 ; Eclipse
+  if(WinActive("ahk_class SWT_Window0")) ; Eclipse
     return 1
-;   IfWinActive,ahk_class Xming X
-;     return 1
-;   IfWinActive,ahk_class SunAwtFrame
-;     return 1
-  IfWinActive,ahk_class Emacs ; NTEmacs
+  if(WinActive("ahk_class Emacs")) ; NTEmacs
     return 1  
-  IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
+  If(WinActive("ahk_class XEmacs")) ; XEmacs on Cygwin
     return 1
-  IfWinActive,ahk_class VirtualConsoleClass ; ConEmu
+  If(WinActive("ahk_class VirtualConsoleClass")) ; ConEmu
     return 1
-  IfWinActive,ahk_class VanDyke Software - SecureCRT ; SecureCRT
+  If(WinActive("ahk_class VanDyke Software - SecureCRT")) ; SecureCRT
     return 1
-  IfWinActive,ahk_exe Code.exe ; Visual Studio Code
+  If(WinActive("ahk_exe Code.exe")) ; Visual Studio Code
 	return 1
-  If(WinActive("ahk_exe devenv.exe"))
+  If(WinActive("ahk_exe devenv.exe")) ; Visual Studio Community
     return 1
 	 
   return 0
@@ -134,14 +122,14 @@ is_target()
 
 delete_char()
 {
-  Send {Del}
-  global is_pre_spc = 0
+  Send("{Del}")
+  global is_pre_spc := 0
   return
 }
 delete_backward_char()
 {
-  Send {BS}
-  global is_pre_spc = 0
+  Send "{BS}"
+  global is_pre_spc := 0
   return
 }
 /*
@@ -149,11 +137,11 @@ delete_backward_char()
  */
 kill_line()
 {
-        global
-        is_pre_spc := 1
-        move_end_of_line()
-        Send ^c{Del}
-        is_pre_spc := 0
+  global
+  is_pre_spc := 1
+  move_end_of_line()
+  Send "^c{Del}"
+  is_pre_spc := 0
 }
 /** Below function is written by usi3. Now obsoleted
 
@@ -166,188 +154,199 @@ kill_line()
   return
 }
 */
-open_line()
-{
-  Send {END}{Enter}{Up}
-  global is_pre_spc = 0
+open_line(){
+  Send "{END}{Enter}{Up}"
+  global is_pre_spc := 0
   return
 }
-quit()
-{
-  Send {ESC}
-  global is_pre_spc = 0
+
+quit(){
+  Send "{ESC}"
+  global is_pre_spc := 0
   return
 }
+
 newline()
 {
-  Send {Enter}
-  global is_pre_spc = 0
+  Send "{Enter}"
+  global is_pre_spc := 0
   return
 }
 indent_for_tab_command()
 {
-  Send {Tab}
-  global is_pre_spc = 0
+  Send "{Tab}"
+  global is_pre_spc := 0
   return
 }
-newline_and_indent()
-{
-  Send {Enter}{Tab}
-  global is_pre_spc = 0
-  return
-}
-isearch_forward()
-{
-  Send ^f
-  global is_pre_spc = 0
-  return
-}
-isearch_backward()
-{
-  Send ^f
-  global is_pre_spc = 0
-  return
-}
-kill_region()
-{
-  Send ^x
-  global is_pre_spc = 0
-  return
-}
-kill_ring_save()
-{
-  Send ^c
-  global is_pre_spc = 0
-  return
-}
-yank()
-{
-  Send ^v
-  global is_pre_spc = 0
-  return
-}
-undo()
-{
-  Send ^z
-  global is_pre_spc = 0
-  return
-}
-find_file()
-{
-  Send ^o
-  global is_pre_x = 0
-  return
-}
-save_buffer()
-{
-  Send, ^s
-  global is_pre_x = 0
-  return
-}
-select_all() ;Bind to Ctrl-x, h
-{
-  Send, ^a
-  global is_pre_x = 0
-  return
-}
-kill_buffer() ;Bind to Ctrl-x,k  which will kill current tab/window
-{
-  Send, ^w
-  global is_pre_x = 0
-  return
-}
-kill_emacs()
-{
-  Send !{F4}
-  global is_pre_x = 0
+newline_and_indent(){
+  Send "{Enter}{Tab}"
+  global is_pre_spc := 0
   return
 }
 
-move_beginning_of_line()
-{
-  global
-  if is_pre_spc
-    Send +{HOME}
-  Else
-    Send {HOME}
+isearch_forward(){
+  Send "^f"
+  global is_pre_spc := 0
   return
 }
+
+isearch_backward()
+{
+  Send "^f"
+  global is_pre_spc := 0
+  return
+}
+kill_region(){
+  Send "^x"
+  global is_pre_spc := 0
+  return
+}
+
+kill_ring_save()
+{
+  Send "^c"
+  global is_pre_spc := 0
+  return
+}
+yank(){
+  Send "^v"
+  global is_pre_spc := 0
+  return
+}
+
+undo(){
+  Send "^z"
+  global is_pre_spc := 0
+  return
+}
+
+find_file(){
+  Send "^o"
+  global is_pre_x := 0
+  return
+}
+
+save_buffer(){
+  Send("^s")
+  global is_pre_x := 0
+  return
+}
+
+select_all(){ ;Bind to Ctrl-x, h
+  Send("^a")
+  global is_pre_x := 0
+  return
+}
+
+kill_buffer(){ ;Bind to Ctrl-x,k  which will kill current tab/window
+  Send("^w")
+  global is_pre_x := 0
+  return
+}
+
+kill_emacs(){
+  Send("!{F4}")
+  global is_pre_x := 0
+  return
+}
+
+move_beginning_of_line(){
+  global
+  if is_pre_spc
+    Send "+{HOME}"
+  Else
+    Send "{HOME}"
+  return
+}
+
 move_end_of_line() {
   global
-  if (is_pre_spc_spc) {
+  if (is_pre_spc) {
     if (WinActive("ahk_class OpusApp")) { ; Microsoft Word
-      Send +{End}+{Left}
+      Send "+{End}+{Left}"
     } else {
-      Send +{End}
+      Send "+{End}"
     }
   } else {
-    Send {End}
+    Send "{End}"
   }
   return
 }
-previous_line()
-{
+
+previous_line(){
   global
   if is_pre_spc
-    Send +{Up}
+    Send "+{Up}"
   Else
-    Send {Up}
-  return
-}
-next_line()
-{
-  global
-  if is_pre_spc
-    Send +{Down}
-  Else
-    Send {Down}
-  return
-}
-forward_char()
-{
-  global
-  if is_pre_spc
-    Send +{Right}
-  Else
-    Send {Right}
-  return
-}
-backward_char()
-{
-  global
-  if is_pre_spc
-    Send +{Left} 
-  Else
-    Send {Left}
-  return
-}
-scroll_up()
-{
-  global
-  if is_pre_spc
-    Send +{PgUp}
-  else
-    Send {PgUp}
-  return
-}
-scroll_down()
-{
-  global
-  if is_pre_spc
-    Send +{PgDn}
-  else
-    Send {PgDn}
+    Send "{Up}"
   return
 }
 
+next_line(){
+  global
+  if is_pre_spc
+    Send "+{Down}"
+  Else
+    Send "{Down}"
+  return
+}
 
+forward_char(){
+  global
+  if is_pre_spc
+    Send "+{Right}"
+  Else
+    Send "{Right}"
+  return
+}
+
+backward_char(){
+  global
+  if(is_pre_spc)
+    Send("+{Left}")
+  Else
+    Send "{Left}"
+  return
+}
+
+scroll_up(){
+  global
+  if is_pre_spc
+    Send "+{PgUp}"
+  else
+    Send "{PgUp}"
+  return
+}
+
+scroll_down(){
+  global
+  if is_pre_spc
+    Send "+{PgDn}"
+  else
+    Send "{PgDn}"
+  return
+}
+
+/**
+ * We use ThisHotkey instead of A_ThisHotkey
+ * A_ThisHotkey: The most recently executed hotkey or non-auto-replace 
+ *               hotstring (blank if none). This value will change if the 
+ *               current thread is interrupted by another hotkey or hotstring
+ */
 ^x::
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    is_pre_x = 1
+{
+  global
+  if is_target(){
+    Send %ThisHotkey%
+    ; Send %A_ThisHotkey%
+  } else {
+    is_pre_x := 1
+  }
   return 
+}
 ^f::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
@@ -358,7 +357,10 @@ scroll_down()
       forward_char()
   }
   return  
+}  
 ^c::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
@@ -367,24 +369,34 @@ scroll_down()
       kill_emacs()
   }
   return  
+}
 ^d::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     delete_char()
   return
+}
 ^h::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     delete_backward_char()
   return
+}
 ^k::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     kill_line()
   return
+}
 ;; ^o::
 ;;   if is_target()
 ;;     Send %A_ThisHotkey%
@@ -392,11 +404,14 @@ scroll_down()
 ;;     open_line()
 ;;   return
 ^g::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     quit()
   return
+}
 ;; ^j::
 ;;   if is_target()
 ;;     Send %A_ThisHotkey%
@@ -404,18 +419,26 @@ scroll_down()
 ;;     newline_and_indent()
 ;;   return
 ^m::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     newline()
   return
+}
 ^i::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     indent_for_tab_command()
   return
+}
 ^s::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
@@ -426,115 +449,161 @@ scroll_down()
       isearch_forward()
   }
   return
+}
 ^r::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     isearch_backward()
   return
+}
 ^w::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     kill_region()
   return
+}
 !w::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     kill_ring_save()
   return
+}
 ^y::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     yank()
   return
+}
 ^/::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     undo()
   return  
-  
+}  
 ;$^{Space}::
 ;^vk20sc039::
 ^vk20::
+{
+  global
   if is_target()
-    Send {CtrlDown}{Space}{CtrlUp}
+    Send "{CtrlDown}{Space}{CtrlUp}"
   else
   {
     if is_pre_spc
-      is_pre_spc = 0
+      is_pre_spc := 0
     else
-      is_pre_spc = 1
+      is_pre_spc := 1
   }
   return
+}
 ^@::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
   {
     if is_pre_spc
-      is_pre_spc = 0
+      is_pre_spc := 0
     else
-      is_pre_spc = 1
+      is_pre_spc := 1
   }
   return
+}
 ^a::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     move_beginning_of_line()
   return
+}
 ^e::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     move_end_of_line()
   return
+}
 ^p::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     previous_line()
   return
+}
 ^n::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     next_line()
   return
+}
 ^b::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     backward_char()
   return
+}
 ^v::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     scroll_down()
   return
+}
 !v::
+{
+  global
   if is_target()
     Send %A_ThisHotkey%
   else
     scroll_up()
   return
+}
 h::  ;Ctrl-x,h  bind to select_all
-  if is_target()
+{
+  global
+  if is_target(){
     Send %A_ThisHotkey%
-  else
-  {
-    if is_pre_x
+  } else if (is_pre_x) {
       select_all()
-    else
+  } else {
       Send %A_ThisHotkey%
   }
   return
+}
+
 k::  ;Ctrl-x, k bind to kill_buffer
+{
+  global
   if is_target(){
     Send %A_ThisHotkey%
   } else if (is_pre_x) {
@@ -543,3 +612,4 @@ k::  ;Ctrl-x, k bind to kill_buffer
       Send %A_ThisHotkey%
   }
   return
+}
