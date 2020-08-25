@@ -65,7 +65,7 @@ class App {
 }
 class AppFilter {
   appList := [ 
-        App.new("Cygwin", , "ConsoleWindowClass", 1), 
+        App.new("Cygwin", "", "ConsoleWindowClass", 1), 
 	    App.new("Meadow", "", "MEADOW", 1)
   ]
 
@@ -592,11 +592,11 @@ h::  ;Ctrl-x,h  bind to select_all
 {
   global
   if is_target(){
-    Send %A_ThisHotkey%
+    Send "h"
   } else if (is_pre_x) {
       select_all()
   } else {
-      Send %A_ThisHotkey%
+      Send "h"
   }
   return
 }
@@ -605,11 +605,11 @@ k::  ;Ctrl-x, k bind to kill_buffer
 {
   global
   if is_target(){
-    Send %A_ThisHotkey%
+    Send "k"
   } else if (is_pre_x) {
       kill_buffer()
   } else {
-      Send %A_ThisHotkey%
+      Send "k"
   }
   return
 }
