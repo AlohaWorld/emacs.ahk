@@ -5,7 +5,7 @@
  * @see <a href="https://github.com/usi3/emacs.ahk">usi3's emacs.ahk</a>
  * 
  * @author <a href="mailto:aloha.world@outlook.com">Yidong Cui</a>
- * @version 1.0.0
+ * @version 1.0.1
  * @since 2020/08/10
 */
 
@@ -27,6 +27,9 @@
  */
 
 ;; Directives
+; Check 
+#Requires AutoHotkey v2.0-a
+MsgBox "This script will run only on v2.0, including alpha releases."
 ; Forces the unconditional installation of the keyboard hook.
 #InstallKeybdHook
 ; Forces the use of the hook to implement all or some keyboard hotkeys.
@@ -78,8 +81,8 @@ class AppFilter {
 }
 
 myAppFilter := AppFilter.new()
-myAppFilter.print()
-; AppFilter.print()
+;; For debug purpose only
+;myAppFilter.print()
 
 ; turns to be 1 when ctrl-x is pressed
 is_pre_x := 0
