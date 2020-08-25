@@ -29,12 +29,15 @@
 ;; Directives
 ; Check 
 #Requires AutoHotkey v2.0-a
-MsgBox "This script will run only on v2.0, including alpha releases."
+; MsgBox "This script will run only on v2.0, including alpha releases."
+
 ; Forces the unconditional installation of the keyboard hook.
 #InstallKeybdHook
+
 ; Forces the use of the hook to implement all or some keyboard hotkeys.
 ; #UseHook On ; ahk v1 use on/off
 #UseHook True
+
 ; Enables or disables warnings for specific conditions which may indicate an
 ; error, such as a typo or missing "global" declaration.
 #Warn
@@ -49,17 +52,27 @@ MsgBox "This script will run only on v2.0, including alpha releases."
 SetKeyDelay 0
 
 /**
- * @name
+ * App holds the application information.
+ * <p>
+ * <li> appName holds the name of the application;
+ * <li> appExe holds the executable filename of the application;
+ * <li> appClass holds the windows class of the application; 
+ * <li> appLevel identifies how this script deals with it: simply igore it or do extra processing
  */
 class App {
   appName :="None"
-  appExe  :="None"
   appClass:="None"
+  appExe  :="None"
   appLevel:=1
-  __New(aName, aExe, aClass, aLevel){
+  
+  /**
+   * Constructs an App object with parameters
+   */
+  __New(aName, aClass, aExe, aLevel){
     this.appName := aName
+	this.appClass := aClass	
 	this.appExe := aExe
-	this.appClass := aClass
+
     /** appLevel
      * 1: Do NOT need emacs keybingdings at all
      */
@@ -68,11 +81,48 @@ class App {
 }
 class AppFilter {
   appList := [ 
-        App.new("Cygwin", "", "ConsoleWindowClass", 1), 
-	    App.new("Meadow", "", "MEADOW", 1)
+     App.new("Cygwin", "ConsoleWindowClass", "", 1)
+	,App.new("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)
+	,App.new("Firefox Browser", "MozillaUIWindowClass", "", 1)
+    ,App.new("GVim", "Vim", "", 1) ; GVIM
+    ,App.new("Exlipse", "SWT_Window0", "", 1) ; Eclipse
+    ,App.new("Emacs for Windows", "Emacs", "", 1) ; NTEmacs
+    ,App.new("ConEmu", "VirtualConsoleClass", "", 1) ; ConEmu
+    ,App.new("SecureCRT", "VanDyke Software - SecureCRT", "", 1)
+    ,App.new("Visual Studio Code", "", "Code.exe", 1)
+	,App.new("Visual Studio", "", "devenv.exe", 1)
   ]
+  /**
+   * Check if current window/application is in the igorenant list.
+   * <p>
+   * If the windows/application is in the list, return the app's Level.
+   * @param No parameters
+   * @return number, which means the application's level.
+   */
+  isTarget(){
+    for (myapp in this.appList) {
+	  activeString := ""
+	  if (myapp.appClass != "") {
+	    activeString := "ahk_class " . myapp.appClass
+	  } else if (myapp.appExe !=""){
+	    activeString := "ahk_exe " . myapp.appExe
+	  } else {
+	    throw "Check your application information in AppFilter.appList[] : " . myapp.appName
+	  }
+	  if (WinActive(activeString)) {
+	    return myapp.appLevel
+	  }
+	} ; end for (myapp...)
+	return 0
+  } ; end isTarget()
 
-  print() {
+  /**
+   * print() is used to display target applications in a message box. <br>
+   * This function is for debug purpose only. <br>
+   * @param No parameters
+   * @return No return values
+   */
+  print() { ; Show all target apps in message box. For debug purpose only.
     for (myapp in this.appList) {
 	  str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appLevel
 	  MsgBox(str, "Info", "OK Iconi")
@@ -91,36 +141,9 @@ is_pre_spc := 0
 
 ; Applications you want to disable emacs-like keybindings
 ; (Please comment out applications you don't use)
-is_target()
-{
-  if(WinActive("ahk_class ConsoleWindowClass")) ; Cygwin
-    return 1 
-  if(WinActive("ahk_class MEADOW")) ; Meadow
-    return 1 
-  if(WinActive("ahk_class cygwin/x X rl-xterm-XTerm-0"))
-    return 1
-  if(WinActive("ahk_class MozillaUIWindowClass")) ; keysnail on Firefox
-    return 1
-  if(WinActive("ahk_class VMwareUnityHostWndClass")) ; Avoid VMwareUnity with AutoHotkey
-    return 1
-  if(WinActive("ahk_class Vim")) ; GVIM
-    return 1
-  if(WinActive("ahk_class SWT_Window0")) ; Eclipse
-    return 1
-  if(WinActive("ahk_class Emacs")) ; NTEmacs
-    return 1  
-  If(WinActive("ahk_class XEmacs")) ; XEmacs on Cygwin
-    return 1
-  If(WinActive("ahk_class VirtualConsoleClass")) ; ConEmu
-    return 1
-  If(WinActive("ahk_class VanDyke Software - SecureCRT")) ; SecureCRT
-    return 1
-  If(WinActive("ahk_exe Code.exe")) ; Visual Studio Code
-	return 1
-  If(WinActive("ahk_exe devenv.exe")) ; Visual Studio Community
-    return 1
-	 
-  return 0
+is_target() {
+  global
+  return myAppFilter.isTarget()
 }
 
 delete_char()
@@ -164,8 +187,15 @@ open_line(){
 }
 
 quit(){
+  global
   Send "{ESC}"
-  global is_pre_spc := 0
+  
+  if(is_pre_spc) { ; Cancel the selection mode
+    Send("{Right}") ; Here we cannot obtain where the cursor is.
+  }
+  ;; All previous states are cleared
+  is_pre_spc := 0
+  is_pre_x := 0
   return
 }
 
@@ -303,6 +333,14 @@ forward_char(){
   return
 }
 
+forward_word(){
+  global
+  if(is_pre_spc)
+    Send "^+{Right}"
+  else
+    Send "^{Right}"
+}
+
 backward_char(){
   global
   if(is_pre_spc)
@@ -312,6 +350,13 @@ backward_char(){
   return
 }
 
+backward_word(){
+  global
+  if(is_pre_spc)
+    Send "^+{Left}"
+  else
+    Send "^{Left}"
+}
 scroll_up(){
   global
   if is_pre_spc
@@ -336,31 +381,38 @@ scroll_down(){
  *               hotstring (blank if none). This value will change if the 
  *               current thread is interrupted by another hotkey or hotstring
  */
-^x::
+^a::
 {
   global
-  if is_target(){
-    Send %ThisHotkey%
-    ; Send %A_ThisHotkey%
-  } else {
-    is_pre_x := 1
-  }
-  return 
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    move_beginning_of_line()
+  return
 }
-^f::
+
+^b::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    backward_char()
+  return
+}
+
+!b::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
   {
-    if is_pre_x
-      find_file()
-    else
-      forward_char()
+    backward_word()
   }
   return  
-}  
+}
+
 ^c::
 {
   global
@@ -382,30 +434,44 @@ scroll_down(){
     delete_char()
   return
 }
-^h::
+
+^e::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
-    delete_backward_char()
+    move_end_of_line()
   return
 }
-^k::
+
+^f::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
-    kill_line()
-  return
+  {
+    if is_pre_x
+      find_file()
+    else
+      forward_char()
+  }
+  return  
+} 
+
+!f::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+  {
+    forward_word()
+  }
+  return  
 }
-;; ^o::
-;;   if is_target()
-;;     Send %A_ThisHotkey%
-;;   else
-;;     open_line()
-;;   return
+
 ^g::
 {
   global
@@ -415,21 +481,17 @@ scroll_down(){
     quit()
   return
 }
-;; ^j::
-;;   if is_target()
-;;     Send %A_ThisHotkey%
-;;   else
-;;     newline_and_indent()
-;;   return
-^m::
+
+^h::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
-    newline()
+    delete_backward_char()
   return
 }
+
 ^i::
 {
   global
@@ -439,6 +501,71 @@ scroll_down(){
     indent_for_tab_command()
   return
 }
+
+;; ^j::
+;;   if is_target()
+;;     Send %A_ThisHotkey%
+;;   else
+;;     newline_and_indent()
+;;   return
+
+^k::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    kill_line()
+  return
+}
+
+^m::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    newline()
+  return
+}
+
+^n::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    next_line()
+  return
+}
+
+;; ^o::
+;;   if is_target()
+;;     Send %A_ThisHotkey%
+;;   else
+;;     open_line()
+;;   return
+
+^p::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    previous_line()
+  return
+}
+
+^r::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    isearch_backward()
+  return
+}
+
 ^s::
 {
   global
@@ -453,15 +580,27 @@ scroll_down(){
   }
   return
 }
-^r::
+
+^v::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
-    isearch_backward()
+    scroll_down()
   return
 }
+
+!v::
+{
+  global
+  if is_target()
+    Send %A_ThisHotkey%
+  else
+    scroll_up()
+  return
+}
+
 ^w::
 {
   global
@@ -480,6 +619,19 @@ scroll_down(){
     kill_ring_save()
   return
 }
+
+^x::
+{
+  global
+  if is_target(){
+    Send %ThisHotkey%
+    ; Send %A_ThisHotkey%
+  } else {
+    is_pre_x := 1
+  }
+  return 
+}
+
 ^y::
 {
   global
@@ -489,15 +641,7 @@ scroll_down(){
     yank()
   return
 }
-^/::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    undo()
-  return  
-}  
+
 ;$^{Space}::
 ;^vk20sc039::
 ^vk20::
@@ -528,73 +672,22 @@ scroll_down(){
   }
   return
 }
-^a::
+
+^/::
 {
   global
   if is_target()
     Send %A_ThisHotkey%
   else
-    move_beginning_of_line()
-  return
-}
-^e::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    move_end_of_line()
-  return
-}
-^p::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    previous_line()
-  return
-}
-^n::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    next_line()
-  return
-}
-^b::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    backward_char()
-  return
-}
-^v::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    scroll_down()
-  return
-}
-!v::
-{
-  global
-  if is_target()
-    Send %A_ThisHotkey%
-  else
-    scroll_up()
-  return
-}
+    undo()
+  return  
+} 
+
 h::  ;Ctrl-x,h  bind to select_all
 {
   global
   if is_target(){
+    ;; In AHK 2.0 alpha, single character is NOT seen as "hotkey". So we cannot use %A_ThisHotkey%
     Send "h"
   } else if (is_pre_x) {
       select_all()
