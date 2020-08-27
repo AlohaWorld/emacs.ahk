@@ -44,12 +44,25 @@
 
 /**
  * TODO: Use "ListHotkeys" to show all hotkeys that current script use
-*/
+ */
 
+/**
+ * Global Settings
+ * These settings affect all scripts in this file
+ */
+ 
 ; The following line is a contribution of NTEmacs wiki http://www49.atwiki.jp/ntemacs/pages/20.html
-; Sets the delay that will occur after each keystroke sent by Send or ControlSend
-; 0 for the smallest possible delay, -1 for no delay at all, leaving blank to retain the current Delay
+; Sets the delay that will occur after each keystroke sent by Send or 
+; ControlSend. 
+; 0 for the smallest possible delay, -1 for no delay at all, leaving blank to 
+; retain the current Delay
 SetKeyDelay 0
+
+; Sets the matching behavior of the WinTitle parameter in built-in functions 
+; such as WinActivaete()
+; "RegEx": Changes WinTitle, WinText, ExcludeTitle, and ExcludeText to accept 
+; regular expressions. For example: WinActivate "Untitled.*Notepad".
+SetTitleMatchMode "RegEx"
 
 /**
  * App holds the application information.
@@ -57,41 +70,112 @@ SetKeyDelay 0
  * <li> appName holds the name of the application;
  * <li> appExe holds the executable filename of the application;
  * <li> appClass holds the windows class of the application; 
- * <li> appLevel identifies how this script deals with it: simply igore it or do extra processing
+ * <li> appFlag identifies how this script deals with it: simply igore it or do
+ *      extra processing
  */
 class App {
-  appName :="None"
-  appClass:="None"
-  appExe  :="None"
-  appLevel:=1
+  appName := "None"
+  appClass:= "None"
+  appExe  := "None"
+  appFlag := 1 ; 1 means current application does not use Emacs Keybindings
   
   /**
    * Constructs an App object with parameters
+   * @param aName   The name of the application. This is defined by the user
+   * @param aClass  The window class of the application. It can be obtained
+   *                with Autohotkey WindowSpy
+   * @param appExe  The executable file name of the application.
+   * @param appFlag The flag of the application. It is assigned by the user and
+   *                denotes hotkey behaviors
    */
-  __New(aName, aClass, aExe, aLevel){
-    this.appName := aName
-	this.appClass := aClass	
-	this.appExe := aExe
-
-    /** appLevel
-     * 1: Do NOT need emacs keybingdings at all
-     */
-	this.appLevel := aLevel
+  __New(aName, aClass, aExe, aFlag){
+    this.appName    := aName
+    this.appClass   := aClass
+    this.appExe     := aExe
+    this.appFlag    := aFlag
   }
-}
+  
+  /**
+   * Check if current app is activated
+   * @return if activated return 1, otherwise return 0
+   */
+  isActive() {
+    ; Init two winTitle strings
+    winTitle1 := "ahk_class NO_APPLICATION_WINDOW_CLASS" ; dummy string
+    winTitle2 := "ahk_exe NO_APPLICATION_EXE"            ; dummy string
+    
+    ; Fill the winTitle string with proper class or exe information
+    if (this.appClass != "") {
+      winTitle1 := "ahk_class " . this.appClass
+    } else if (this.appExe != "") {
+      winTitle2 := "ahk_exe " . this.appExe
+    } else {
+      throw "Check " . this.appName . "'s application information in AppFilter.appList[]"
+    }
+
+    ; Check if current application is active
+    if (WinActive(winTitle1) && WinActive(winTitle2)) { ; Check both ahk_class and ahk_exe
+      return 1 ; Active, return 1
+    } else {
+      return 0 ; NOT active, return 0
+    }
+  } ; end isActive()
+  
+  getAppLevel() {
+    return this.appLevel
+  }
+  
+  /**
+   * Check if current app may work with Emacs Keybindings together
+   * @return if appLevel is 1, which means the app CANNOT be used with Emacs
+   *         Keybindings (the app is EVIL), return true; otherwise, return false
+   */
+  isEvil() {
+    return (this.appLevel == 1)
+  }
+} ; end class App
+
+/**
+ * App.appFlag
+ * Value    Meaning
+ * 1        do NOT use Emacs Keybindings
+ * 10       Microsoft Office programs (Word & Powerpoint) treat {End} differently
+ */
 class AppFilter {
   appList := [ 
-     App.new("Cygwin", "ConsoleWindowClass", "", 1)
-	,App.new("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)
-	,App.new("Firefox Browser", "MozillaUIWindowClass", "", 1)
-    ,App.new("GVim", "Vim", "", 1) ; GVIM
-    ,App.new("Exlipse", "SWT_Window0", "", 1) ; Eclipse
-    ,App.new("Emacs for Windows", "Emacs", "", 1) ; NTEmacs
-    ,App.new("ConEmu", "VirtualConsoleClass", "", 1) ; ConEmu
+    App.new("Emacs for Windows", "Emacs", "", 1)
+    ;; Console Apps
+    ,App.new("ConEmu", "VirtualConsoleClass", "", 1)
     ,App.new("SecureCRT", "VanDyke Software - SecureCRT", "", 1)
+
+    ;; Development Apps
     ,App.new("Visual Studio Code", "", "Code.exe", 1)
-	,App.new("Visual Studio", "", "devenv.exe", 1)
+    ,App.new("Visual Studio", "", "devenv.exe", 1)
+    ,App.new("Eclipse IDE", "SWT_Window0", "", 1)
+
+    ;; Browsers
+    ,App.new("Firefox Browser", "MozillaUIWindowClass", "", 1)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Apps that need special treatment
+
+    ;; Word & Powerpoint
+    ;; need special C-k treatment
+    ,App.new("Word", "OpusApp", "", 10)
+    ,App.new("Powerpoint", "PPTFrameClass", "", 10)
+
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Rarely used apps
+    
+    ;; Editors
+    ,App.new("GVim", "Vim", "", 1) ; GVIM   
+
+    ;; OS Simulation
+    ,App.new("Cygwin", "ConsoleWindowClass", "", 1)
+    ,App.new("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)    
   ]
+
   /**
    * Check if current window/application is in the igorenant list.
    * <p>
@@ -99,22 +183,50 @@ class AppFilter {
    * @param No parameters
    * @return number, which means the application's level.
    */
-  isTarget(){
-    for (myapp in this.appList) {
-	  activeString := ""
-	  if (myapp.appClass != "") {
-	    activeString := "ahk_class " . myapp.appClass
-	  } else if (myapp.appExe !=""){
-	    activeString := "ahk_exe " . myapp.appExe
-	  } else {
-	    throw "Check your application information in AppFilter.appList[] : " . myapp.appName
-	  }
-	  if (WinActive(activeString)) {
-	    return myapp.appLevel
-	  }
-	} ; end for (myapp...)
-	return 0
-  } ; end isTarget()
+  shouldDisableEmacsKB(){
+    flag := false
+    for (myApp in this.appList) {
+      ; Check if myApp is activated and CANNOT work with EKB
+      if (myApp.isActive() && myApp.isEvil()) {
+        flag := true
+        break
+      }
+    } ; end for (myApp...)
+    return flag
+  } ; end shouldDisableEmacsKB()
+
+  /**
+   * If current app is activated, the function returns the App object, otherwise 
+   * it returns empty string
+   * <p>
+   * @return an App object or an empty string ""
+   */
+  getActiveApp() {
+    activeApp := ""  ; Init the state variable to empty string
+    for (myApp in this.appList) {
+      if (myApp.isActive()) {
+        activeApp := myApp
+        break
+      }
+    } ; end for (myapp...)
+    return activeApp  
+  } ; end getActiveApp()
+  
+  /**
+   * If current app is activated, returns appLevel, otherwise return 0 
+   * <p>
+   * @return Activated application's appLevel or 0
+   */
+  getActiveAppLevel(){
+    appLevel := 0
+    for (myApp in this.appList) {
+      if (myApp.isActive()) {
+        appLevel := myApp.appLevel
+        break
+      }
+    } ; end for (myapp...)
+    return appLevel
+  } ; end getActiveAppLevel()
 
   /**
    * print() is used to display target applications in a message box. <br>
@@ -124,10 +236,10 @@ class AppFilter {
    */
   print() { ; Show all target apps in message box. For debug purpose only.
     for (myapp in this.appList) {
-	  str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appLevel
-	  MsgBox(str, "Info", "OK Iconi")
-	}
-  }
+      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appLevel
+      MsgBox(str, "Info", "OK Iconi")
+    }
+  } ; end print()
 }
 
 myAppFilter := AppFilter.new()
@@ -143,34 +255,33 @@ is_pre_spc := 0
 ; (Please comment out applications you don't use)
 is_target() {
   global
-  return myAppFilter.isTarget()
+  return myAppFilter.shouldDisableEmacsKB()
 }
 
-delete_char()
-{
+delete_char() {
   Send("{Del}")
   global is_pre_spc := 0
   return
 }
-delete_backward_char()
-{
+
+delete_backward_char() {
   Send "{BS}"
   global is_pre_spc := 0
   return
 }
+
 /*
  * kill_line() is intercepted from ntemacs.ahk
  */
-kill_line()
-{
+kill_line() {
   global
   is_pre_spc := 1
   move_end_of_line()
   Send "^c{Del}"
   is_pre_spc := 0
 }
-/** Below function is written by usi3. Now obsoleted
 
+/** Below function is written by usi3. Now obsoleted
 kill_line()
 {
   Send {ShiftDown}{END}{SHIFTUP}
@@ -191,7 +302,7 @@ quit(){
   Send "{ESC}"
   
   if(is_pre_spc) { ; Cancel the selection mode
-    Send("{Right}") ; Here we cannot obtain where the cursor is.
+    Send("{Right}") ; Left or Right both are okay. However we cannot obtain where the cursor is.
   }
   ;; All previous states are cleared
   is_pre_spc := 0
@@ -205,12 +316,14 @@ newline()
   global is_pre_spc := 0
   return
 }
+
 indent_for_tab_command()
 {
   Send "{Tab}"
   global is_pre_spc := 0
   return
 }
+
 newline_and_indent(){
   Send "{Enter}{Tab}"
   global is_pre_spc := 0
@@ -229,6 +342,7 @@ isearch_backward()
   global is_pre_spc := 0
   return
 }
+
 kill_region(){
   Send "^x"
   global is_pre_spc := 0
@@ -241,6 +355,7 @@ kill_ring_save()
   global is_pre_spc := 0
   return
 }
+
 yank(){
   Send "^v"
   global is_pre_spc := 0
@@ -295,7 +410,7 @@ move_beginning_of_line(){
 move_end_of_line() {
   global
   if (is_pre_spc) {
-    if (WinActive("ahk_class OpusApp")) { ; Microsoft Word
+    if (myAppFilter.getActiveAppLevel() == 10) { ; Microsoft Word & Powerpoint
       Send "+{End}+{Left}"
     } else {
       Send "+{End}"
@@ -357,6 +472,7 @@ backward_word(){
   else
     Send "^{Left}"
 }
+
 scroll_up(){
   global
   if is_pre_spc
