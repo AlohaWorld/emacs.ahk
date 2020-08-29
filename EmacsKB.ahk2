@@ -121,17 +121,20 @@ class App {
     }
   } ; end isActive()
   
-  getAppLevel() {
-    return this.appLevel
+  getAppFlag() {
+    return this.appFlag
   }
   
   /**
    * Check if current app may work with Emacs Keybindings together
-   * @return if appLevel is 1, which means the app CANNOT be used with Emacs
+   * @return if appFlag is 1, which means the app CANNOT be used with Emacs
    *         Keybindings (the app is EVIL), return true; otherwise, return false
    */
   isEvil() {
-    return (this.appLevel == 1)
+    if (this.appFlag == 1)
+      return true
+    else
+      return false
   }
 } ; end class App
 
@@ -179,7 +182,7 @@ class AppFilter {
   /**
    * Check if current window/application is in the igorenant list.
    * <p>
-   * If the windows/application is in the list, return the app's Level.
+   * If the windows/application is in the list, return the app's Flag.
    * @param No parameters
    * @return number, which means the application's level.
    */
@@ -213,20 +216,20 @@ class AppFilter {
   } ; end getActiveApp()
   
   /**
-   * If current app is activated, returns appLevel, otherwise return 0 
+   * If current app is activated, returns appFlag, otherwise return 0 
    * <p>
-   * @return Activated application's appLevel or 0
+   * @return Activated application's appFlag or 0
    */
-  getActiveAppLevel(){
-    appLevel := 0
+  getActiveAppFlag(){
+    appFlag := 0
     for (myApp in this.appList) {
       if (myApp.isActive()) {
-        appLevel := myApp.appLevel
+        appFlag := myApp.appFlag
         break
       }
     } ; end for (myapp...)
-    return appLevel
-  } ; end getActiveAppLevel()
+    return appFlag
+  } ; end getActiveAppFlag()
 
   /**
    * print() is used to display target applications in a message box. <br>
@@ -236,7 +239,7 @@ class AppFilter {
    */
   print() { ; Show all target apps in message box. For debug purpose only.
     for (myapp in this.appList) {
-      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appLevel
+      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appFlag
       MsgBox(str, "Info", "OK Iconi")
     }
   } ; end print()
@@ -410,7 +413,7 @@ move_beginning_of_line(){
 move_end_of_line() {
   global
   if (is_pre_spc) {
-    if (myAppFilter.getActiveAppLevel() == 10) { ; Microsoft Word & Powerpoint
+    if (myAppFilter.getActiveAppFlag() == 10) { ; Microsoft Word & Powerpoint
       Send "+{End}+{Left}"
     } else {
       Send "+{End}"
