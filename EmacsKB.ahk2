@@ -114,7 +114,7 @@ class App {
     }
 
     ; Check if current application is active
-    if (WinActive(winTitle1) && WinActive(winTitle2)) { ; Check both ahk_class and ahk_exe
+    if (WinActive(winTitle1) || WinActive(winTitle2)) { ; Check both ahk_class and ahk_exe
       return 1 ; Active, return 1
     } else {
       return 0 ; NOT active, return 0
