@@ -1,7 +1,18 @@
-# emacs.ahk 
-This tiny script allows you to use the emacs-like key bindings on Windows, which is written in AutoHotkey (AHK) language. The maintainer has used this script since 2007 and has verified that it works effectively for various kinds of applications.
+# Emacs Key Bingings for Windows 
+This script allows you to use the emacs-like key bindings on Windows, which is written in AutoHotkey (AHK) language. 
+
+This script develops based upon [[usi3/emacs.ahk][https://github.com/usi3/emacs.ahk]] project. 
+
+## Installations
+
+1. Download Auto Hot Key v2 (Alpha) @ https://www.autohotkey.com/
+2. Unpack the zip file to a folder, say, C:\Program Files\AutoHotKey
+3. Clone or download this repository
+4. Double click on EmacsKB.ahk2 and use "C:\Program Files\AutoHotKey\AutoHotkeyU64.exe" to open this .ahk2 file
+5. Enjoy Emacs Key Binding on windows
 
 ## Supported keybindings
+
 <table>
   <tr>
     <th>Keybinding</th>
@@ -24,12 +35,20 @@ This tiny script allows you to use the emacs-like key bindings on Windows, which
 <td>save-buffer</td>
 </tr>
 <tr>
+<td>C-x k</td>
+<td>kill-buffer / kill current tab (in chrome, etc.) </td>
+</tr>
+<tr>
 <td>C-x C-c</td>
-<td>kill-emacs</td>
+<td>kill-emacs / close current application</td>
 </tr>
 <tr>
 <td>C-d</td>
 <td>delete-char</td>
+</tr>
+<tr>
+<td>M-d</td>
+<td>delete-word</td>
 </tr>
 <tr>
 <td>C-h</td>
@@ -104,8 +123,16 @@ This tiny script allows you to use the emacs-like key bindings on Windows, which
 <td>forward-char</td>
 </tr>
 <tr>
+<td>M-f</td>
+<td>forward-word</td>
+</tr>    
+<tr>
 <td>C-b</td>
 <td>backward-char</td>
+</tr>
+<tr>
+<td>M-b</td>
+<td>backward-word</td>
 </tr>
 <tr>
 <td>C-v</td>
@@ -116,6 +143,9 @@ This tiny script allows you to use the emacs-like key bindings on Windows, which
 <td>scroll-up</td>
 </tr>
 </table>
+
+
+
 
 
 ## Some webpages that introduced this script
