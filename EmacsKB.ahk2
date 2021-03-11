@@ -1,0 +1,879 @@
+/**
+ * This script emulate emacs keybindings in Windows
+ *
+ * <p>This work is motivated by usi3's emacs.ahk scrpit.
+ * @see <a href="https://github.com/usi3/emacs.ahk">usi3's emacs.ahk</a>
+ * 
+ * @author <a href="mailto:aloha.world@outlook.com">Yidong Cui</a>
+ * @version 1.0.1
+ * @since 2020/08/10
+*/
+
+/**
+ * Copyright 2020 Yidong Cui
+ *
+ * <p>This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * <p>This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * <p>You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * ChangeLog
+ * 2021/03/11 ahk2 with version earlier than a126xxx, use "ClassName.new()" to create an object
+ *            After a128xxx, use "ClassName()" to create an object
+ */
+;; Directives
+
+; Check 
+#Requires AutoHotkey v2.0-a
+; MsgBox "This script will run only on v2.0, including alpha releases."
+
+; Forces the unconditional installation of the keyboard hook.
+#InstallKeybdHook
+
+; Forces the use of the hook to implement all or some keyboard hotkeys.
+; #UseHook On ; ahk v1 use on/off
+#UseHook True
+
+; Enables or disables warnings for specific conditions which may indicate an
+; error, such as a typo or missing "global" declaration.
+#Warn
+
+/**
+ * TODO: Use "ListHotkeys" to show all hotkeys that current script use
+ */
+
+;; Global Settings
+;; These settings affect all scripts in this file
+ 
+; The following line is a contribution of NTEmacs wiki http://www49.atwiki.jp/ntemacs/pages/20.html
+; Sets the delay that will occur after each keystroke sent by Send or 
+; ControlSend. 
+; 0 for the smallest possible delay, -1 for no delay at all, leaving blank to 
+; retain the current Delay
+SetKeyDelay 0
+
+; Sets the matching behavior of the WinTitle parameter in built-in functions 
+; such as WinActivaete()
+; "RegEx": Changes WinTitle, WinText, ExcludeTitle, and ExcludeText to accept 
+; regular expressions. For example: WinActivate "Untitled.*Notepad".
+SetTitleMatchMode "RegEx"
+
+;; class App
+;; This class stands for any applications that needs special treats
+
+/**
+ * App holds the application information.
+ * <p>
+ * <li> appName holds the name of the application;
+ * <li> appExe holds the executable filename of the application;
+ * <li> appClass holds the windows class of the application; 
+ * <li> appFlag identifies how this script deals with it: simply igore it or do
+ *      extra processing
+ */
+class App {
+  appName := "None"
+  appClass:= "None"
+  appExe  := "None"
+  appFlag := 1 ; 1 means current application does not use Emacs Keybindings
+  
+  /**
+   * Constructs an App object with parameters
+   * @param aName   The name of the application. This is defined by the user
+   * @param aClass  The window class of the application. It can be obtained
+   *                with Autohotkey WindowSpy
+   * @param appExe  The executable file name of the application.
+   * @param appFlag The flag of the application. It is assigned by the user and
+   *                denotes hotkey behaviors
+   */
+  __New(aName, aClass, aExe, aFlag){
+    this.appName    := aName
+    this.appClass   := aClass
+    this.appExe     := aExe
+    this.appFlag    := aFlag
+  }
+  
+  /**
+   * Check if current app is activated
+   * @return if activated return 1, otherwise return 0
+   */
+  isActive() {
+    ; Init two winTitle strings
+    winTitle1 := "ahk_class NO_APPLICATION_WINDOW_CLASS" ; dummy string
+    winTitle2 := "ahk_exe NO_APPLICATION_EXE"            ; dummy string
+    
+    ; Fill the winTitle string with proper class or exe information
+    if (this.appClass != "") {
+      winTitle1 := "ahk_class " . this.appClass
+    } else if (this.appExe != "") {
+      winTitle2 := "ahk_exe " . this.appExe
+    } else {
+      throw "Check " . this.appName . "'s application information in AppFilter.appList[]"
+    }
+
+    ; Check if current application is active
+    if (WinActive(winTitle1) || WinActive(winTitle2)) { ; Check both ahk_class and ahk_exe
+      return 1 ; Active, return 1
+    } else {
+      return 0 ; NOT active, return 0
+    }
+  } ; end isActive()
+  
+  getAppFlag() {
+    return this.appFlag
+  }
+  
+  /**
+   * Check if current app may work with Emacs Keybindings together
+   * @return return true if appFlag is 1, which means the app CANNOT be used with Emacs
+   *         Keybindings (the app is EVIL); otherwise, return false
+   */
+  isEvil() {
+    if (this.appFlag == 1)
+      return true
+    else
+      return false
+  }
+} ; end class App
+
+;; class AppFilter
+;; This class stands for the treatments of special apps.
+
+/**
+ * App.appFlag
+ * Value    Meaning
+ * 1        do NOT use Emacs Keybindings
+ * 10       Microsoft Office programs (Word & Powerpoint) treat {End} differently
+ */
+class AppFilter {
+/**
+ * App Structure: "App Name", "app's ahk_class", "app ahk_exe", appFlag
+ */
+  appList := [ 
+    App("Emacs for Windows", "Emacs", "", 1)
+    ;; Console Apps
+    ,App("ConEmu", "VirtualConsoleClass", "", 1)
+    ,App("SecureCRT", "VanDyke Software - SecureCRT", "", 1)
+
+    ;; Development Apps
+    ,App("Visual Studio Code", "", "Code.exe", 1)
+    ,App("Visual Studio", "", "devenv.exe", 1)
+    ,App("Eclipse IDE", "SWT_Window0", "", 1)
+    ,App("Netbeans IDE", "", "netbeans64.exe", 1)
+
+    ;; Browsers
+    ,App("Firefox Browser", "MozillaUIWindowClass", "", 1)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Apps that need special treatment
+
+    ;; Word & Powerpoint
+    ;; need special C-k treatment
+    ,App("Word", "OpusApp", "", 10)
+    ,App("Powerpoint", "PPTFrameClass", "", 10)
+
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Rarely used apps
+    
+    ;; Editors
+    ,App("GVim", "Vim", "", 1) ; GVIM   
+
+    ;; OS Simulation
+    ,App("Cygwin", "ConsoleWindowClass", "", 1)
+    ,App("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)    
+  ]
+
+  /**
+   * Check if current window/application is in the igorenant list.
+   * <p>
+   * If the windows/application is in the list, return the app's Flag.
+   * @param No parameters
+   * @return number, which means the application's flag.
+   */
+  shouldDisableEmacsKB(){
+    flag := false
+    for (myApp in this.appList) {
+      ; Check if myApp is activated and CANNOT work with EKB
+      if (myApp.isActive() && myApp.isEvil()) {
+        flag := true
+        break
+      }
+    } ; end for (myApp...)
+    return flag
+  } ; end shouldDisableEmacsKB()
+
+  /**
+   * If current app is activated, the function returns the App object, otherwise 
+   * it returns empty string
+   * <p>
+   * @return an App object or an empty string ""
+   */
+  getActiveApp() {
+    activeApp := ""  ; Init the state variable to empty string
+    for (myApp in this.appList) {
+      if (myApp.isActive()) {
+        activeApp := myApp
+        break
+      }
+    } ; end for (myapp...)
+    return activeApp  
+  } ; end getActiveApp()
+  
+  /**
+   * If current app is activated, returns appFlag, otherwise return 0 
+   * <p>
+   * @return Activated application's appFlag or 0
+   */
+  getActiveAppFlag(){
+    appFlag := 0
+    for (myApp in this.appList) {
+      if (myApp.isActive()) {
+        appFlag := myApp.appFlag
+        break
+      }
+    } ; end for (myapp...)
+    return appFlag
+  } ; end getActiveAppFlag()
+
+  /**
+   * print() is used to display target applications in a message box. <br>
+   * This function is for debug purpose only. <br>
+   * @param No parameters
+   * @return No return values
+   */
+  print() { ; Show all target apps in message box. For debug purpose only.
+    for (myapp in this.appList) {
+      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", the flag is: " myapp.appFlag
+      MsgBox(str, "Info", "OK Iconi")
+    }
+  } ; end print()
+}
+
+
+; myAppFilter := AppFilter.new()
+myAppFilter := AppFilter()
+;; For debug purpose only
+;myAppFilter.print()
+
+; turns to be 1 when ctrl-x is pressed
+is_pre_x := 0
+; turns to be 1 when ctrl-space is pressed, which is in selection mode
+is_pre_spc := 0
+
+; Applications you want to disable emacs-like keybindings
+; (Please comment out applications you don't use)
+is_target() {
+  global
+  return myAppFilter.shouldDisableEmacsKB()
+}
+
+delete_char() {
+  Send("{Del}")
+  global is_pre_spc := 0
+  return
+}
+
+delete_backward_char() {
+  Send "{BS}"
+  global is_pre_spc := 0
+  return
+}
+
+delete_word(){ ; Bind to Alt-d
+  global
+  if (is_pre_spc) { ; If current user is in selection mode, cancel it
+    quit() ; No matter if the user has selected text or merely in the mode
+  }
+  
+  /* Method 1: use forward_word() then Delete or Backspace
+   *          Try to see if there are side effects. cyd@20200829
+   */
+  is_pre_spc := true
+  forward_word() ; Select current word
+  Send "{Del}"  
+  
+  /* Method 2: Send Ctrl-Del direct */
+  /*
+  Send "^{Del}"
+  is_pre_spc := false
+  */
+}
+
+
+/*
+ * kill_line() is intercepted from ntemacs.ahk
+ */
+kill_line() {
+  global
+  is_pre_spc := 1
+  move_end_of_line()
+  Send "^c{Del}"
+  is_pre_spc := 0
+}
+
+/** Below function is written by usi3. Now obsoleted
+kill_line()
+{
+  Send {ShiftDown}{END}{SHIFTUP}
+  Sleep 50 ;[ms] this value depends on your environment
+  Send ^x
+  global is_pre_spc = 0
+  return
+}
+*/
+open_line(){
+  Send "{END}{Enter}{Up}"
+  global is_pre_spc := 0
+  return
+}
+
+quit(){
+  global
+  Send "{ESC}"
+  
+  if(is_pre_spc) { ; Cancel the selection mode
+    Send("^{Space}") ; Left or Right both are okay. However we cannot obtain where the cursor is.
+  }
+  ;; All previous states are cleared
+  is_pre_spc := 0
+  is_pre_x := 0
+  return
+}
+
+newline()
+{
+  Send "{Enter}"
+  global is_pre_spc := 0
+  return
+}
+
+indent_for_tab_command()
+{
+  Send "{Tab}"
+  global is_pre_spc := 0
+  return
+}
+
+newline_and_indent(){
+  Send "{Enter}{Tab}"
+  global is_pre_spc := 0
+  return
+}
+
+isearch_forward(){
+  Send "^f"
+  global is_pre_spc := 0
+  return
+}
+
+isearch_backward()
+{
+  Send "^f"
+  global is_pre_spc := 0
+  return
+}
+
+kill_region(){
+  Send "^x"
+  global is_pre_spc := 0
+  return
+}
+
+kill_ring_save()
+{
+  Send "^c"
+  global is_pre_spc := 0
+  return
+}
+
+yank(){
+  Send "^v"
+  global is_pre_spc := 0
+  return
+}
+
+undo(){
+  Send "^z"
+  global is_pre_spc := 0
+  return
+}
+
+find_file(){
+  Send "^o"
+  global is_pre_x := 0
+  return
+}
+
+save_buffer(){
+  Send("^s")
+  global is_pre_x := 0
+  return
+}
+
+select_all(){ ;Bind to Ctrl-x, h
+  Send("^a")
+  global is_pre_x := 0
+  return
+}
+
+kill_buffer(){ ;Bind to Ctrl-x,k  which will kill current tab/window
+  Send("^w")
+  global is_pre_x := 0
+  return
+}
+
+kill_emacs(){
+  Send("!{F4}")
+  global is_pre_x := 0
+  return
+}
+
+move_beginning_of_line(){
+  global
+  if is_pre_spc
+    Send "+{HOME}"
+  Else
+    Send "{HOME}"
+  return
+}
+
+move_end_of_line() {
+  global
+  if (is_pre_spc) {
+    if (myAppFilter.getActiveAppFlag() == 10) { ; Microsoft Word & Powerpoint
+      Send "+{End}+{Left}"
+    } else {
+      Send "+{End}"
+    }
+  } else {
+    Send "{End}"
+  }
+  return
+}
+
+previous_line(){
+  global
+  if is_pre_spc
+    Send "+{Up}"
+  Else
+    Send "{Up}"
+  return
+}
+
+next_line(){
+  global
+  if is_pre_spc
+    Send "+{Down}"
+  Else
+    Send "{Down}"
+  return
+}
+
+forward_char(){
+  global
+  if is_pre_spc
+    Send "+{Right}"
+  Else
+    Send "{Right}"
+  return
+}
+
+forward_word(){
+  global
+  if(is_pre_spc)
+    Send "^+{Right}"
+  else
+    Send "^{Right}"
+}
+
+backward_char(){
+  global
+  if(is_pre_spc)
+    Send("+{Left}")
+  Else
+    Send "{Left}"
+  return
+}
+
+backward_word(){
+  global
+  if(is_pre_spc)
+    Send "^+{Left}"
+  else
+    Send "^{Left}"
+}
+
+scroll_up(){
+  global
+  if is_pre_spc
+    Send "+{PgUp}"
+  else
+    Send "{PgUp}"
+  return
+}
+
+scroll_down(){
+  global
+  if is_pre_spc
+    Send "+{PgDn}"
+  else
+    Send "{PgDn}"
+  return
+}
+
+/**
+ * We may use ThisHotkey instead of A_ThisHotkey
+ * A_ThisHotkey: The most recently executed hotkey or non-auto-replace 
+ *               hotstring (blank if none). This value will change if the 
+ *               current thread is interrupted by another hotkey or hotstring
+ */
+ 
+/**
+ * In AHK 2.0+, Build-in Variables, like A_ThisHotkey can be referenced without "%" pairs
+ * AHK 1.+:  Send %A_ThisHotkey%
+ * AHK 2.+:  Send A_ThisHotkey
+ */ 
+^a::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    move_beginning_of_line()
+  return
+}
+
+^b::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    backward_char()
+  return
+}
+
+!b::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    backward_word()
+  }
+  return  
+}
+
+^c::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    if is_pre_x
+      kill_emacs()
+  }
+  return  
+}
+^d::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    delete_char()
+  return
+}
+
+!d::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    delete_word()
+}
+^e::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    move_end_of_line()
+  return
+}
+
+^f::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    if is_pre_x
+      find_file()
+    else
+      forward_char()
+  }
+  return  
+} 
+
+!f::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    forward_word()
+  }
+  return  
+}
+
+^g::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    quit()
+  return
+}
+
+^h::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    delete_backward_char()
+  return
+}
+
+^i::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    indent_for_tab_command()
+  return
+}
+
+;; ^j::
+;;   if is_target()
+;;     Send (A_ThisHotkey)
+;;   else
+;;     newline_and_indent()
+;;   return
+
+^k::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    kill_line()
+  return
+}
+
+^m::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    newline()
+  return
+}
+
+^n::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    next_line()
+  return
+}
+
+;; ^o::
+;;   if is_target()
+;;     Send (A_ThisHotkey)
+;;   else
+;;     open_line()
+;;   return
+
+^p::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    previous_line()
+  return
+}
+
+^r::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    isearch_backward()
+  return
+}
+
+^s::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    if is_pre_x
+      save_buffer()
+    else
+      isearch_forward()
+  }
+  return
+}
+
+^v::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    scroll_down()
+  return
+}
+
+!v::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    scroll_up()
+  return
+}
+
+^w::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    kill_region()
+  return
+}
+!w::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    kill_ring_save()
+  return
+}
+
+^x::
+{
+  global
+  if is_target(){
+    Send (A_ThisHotkey)
+  } else {
+    is_pre_x := 1
+  }
+  return 
+}
+
+^y::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    yank()
+  return
+}
+
+;$^{Space}::
+;^vk20sc039::
+^vk20::
+{
+  global
+  if is_target()
+    Send "{CtrlDown}{Space}{CtrlUp}"
+  else
+  {
+    if is_pre_spc
+      is_pre_spc := 0
+    else
+      is_pre_spc := 1
+  }
+  return
+}
+^@::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+  {
+    if is_pre_spc
+      is_pre_spc := 0
+    else
+      is_pre_spc := 1
+  }
+  return
+}
+
+^/::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    undo()
+  return  
+} 
+
+h::  ;Ctrl-x,h  bind to select_all
+{
+  global
+  if is_target(){
+    Send (A_ThisHotkey)
+  } else if (is_pre_x) {
+      select_all()
+  } else {
+      Send (A_ThisHotkey)
+  }
+  return
+}
+
+k::  ;Ctrl-x, k bind to kill_buffer
+{
+  global
+  if is_target(){
+    Send "k"
+  } else if (is_pre_x) {
+      kill_buffer()
+  } else {
+      Send "k"
+  }
+  return
+}
