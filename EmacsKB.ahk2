@@ -420,7 +420,7 @@ save_buffer(){
   return
 }
 
-select_all(){ ;Bind to Ctrl-x, h
+mark_whole_buffer(){ ;Bind to Ctrl-x, h
   Send("^a")
   global is_pre_x := 0
   return
@@ -852,13 +852,13 @@ scroll_down(){
   return  
 } 
 
-h::  ;Ctrl-x,h  bind to select_all
+h::  ;Ctrl-x,h  bind to mark_whole_buffer
 {
   global
   if is_target(){
     Send (A_ThisHotkey)
   } else if (is_pre_x) {
-      select_all()
+      mark_whole_buffer()
   } else {
       Send (A_ThisHotkey)
   }

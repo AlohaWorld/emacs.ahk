@@ -35,12 +35,16 @@ This script develops based upon [[usi3/emacs.ahk][https://github.com/usi3/emacs.
 <td>save-buffer</td>
 </tr>
 <tr>
+<td>C-x C-c</td>
+<td>kill-emacs / close current application</td>
+</tr>
+<tr>
 <td>C-x k</td>
 <td>kill-buffer / kill current tab (in chrome, etc.) </td>
 </tr>
 <tr>
-<td>C-x C-c</td>
-<td>kill-emacs / close current application</td>
+<td>C-x h</td>
+<td>mark-whole-buffer / select all </td>
 </tr>
 <tr>
 <td>C-d</td>
@@ -143,6 +147,7 @@ This script develops based upon [[usi3/emacs.ahk][https://github.com/usi3/emacs.
 <td>scroll-up</td>
 </tr>
 </table>
+
 
 
 
