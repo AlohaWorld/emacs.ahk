@@ -26,7 +26,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * ChangeLog
+ * 2021/03/11 ahk2 with version earlier than a126xxx, use "ClassName.new()" to create an object
+ *            After a128xxx, use "ClassName()" to create an object
+ */
 ;; Directives
+
 ; Check 
 #Requires AutoHotkey v2.0-a
 ; MsgBox "This script will run only on v2.0, including alpha releases."
@@ -46,10 +52,8 @@
  * TODO: Use "ListHotkeys" to show all hotkeys that current script use
  */
 
-/**
- * Global Settings
- * These settings affect all scripts in this file
- */
+;; Global Settings
+;; These settings affect all scripts in this file
  
 ; The following line is a contribution of NTEmacs wiki http://www49.atwiki.jp/ntemacs/pages/20.html
 ; Sets the delay that will occur after each keystroke sent by Send or 
@@ -63,6 +67,9 @@ SetKeyDelay 0
 ; "RegEx": Changes WinTitle, WinText, ExcludeTitle, and ExcludeText to accept 
 ; regular expressions. For example: WinActivate "Untitled.*Notepad".
 SetTitleMatchMode "RegEx"
+
+;; class App
+;; This class stands for any applications that needs special treats
 
 /**
  * App holds the application information.
@@ -138,6 +145,9 @@ class App {
   }
 } ; end class App
 
+;; class AppFilter
+;; This class stands for the treatments of special apps.
+
 /**
  * App.appFlag
  * Value    Meaning
@@ -149,38 +159,38 @@ class AppFilter {
  * App Structure: "App Name", "app's ahk_class", "app ahk_exe", appFlag
  */
   appList := [ 
-    App.new("Emacs for Windows", "Emacs", "", 1)
+    App("Emacs for Windows", "Emacs", "", 1)
     ;; Console Apps
-    ,App.new("ConEmu", "VirtualConsoleClass", "", 1)
-    ,App.new("SecureCRT", "VanDyke Software - SecureCRT", "", 1)
+    ,App("ConEmu", "VirtualConsoleClass", "", 1)
+    ,App("SecureCRT", "VanDyke Software - SecureCRT", "", 1)
 
     ;; Development Apps
-    ,App.new("Visual Studio Code", "", "Code.exe", 1)
-    ,App.new("Visual Studio", "", "devenv.exe", 1)
-    ,App.new("Eclipse IDE", "SWT_Window0", "", 1)
-    ,App.new("Netbeans IDE", "", "netbeans64.exe", 1)
+    ,App("Visual Studio Code", "", "Code.exe", 1)
+    ,App("Visual Studio", "", "devenv.exe", 1)
+    ,App("Eclipse IDE", "SWT_Window0", "", 1)
+    ,App("Netbeans IDE", "", "netbeans64.exe", 1)
 
     ;; Browsers
-    ,App.new("Firefox Browser", "MozillaUIWindowClass", "", 1)
+    ,App("Firefox Browser", "MozillaUIWindowClass", "", 1)
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; Apps that need special treatment
 
     ;; Word & Powerpoint
     ;; need special C-k treatment
-    ,App.new("Word", "OpusApp", "", 10)
-    ,App.new("Powerpoint", "PPTFrameClass", "", 10)
+    ,App("Word", "OpusApp", "", 10)
+    ,App("Powerpoint", "PPTFrameClass", "", 10)
 
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; Rarely used apps
     
     ;; Editors
-    ,App.new("GVim", "Vim", "", 1) ; GVIM   
+    ,App("GVim", "Vim", "", 1) ; GVIM   
 
     ;; OS Simulation
-    ,App.new("Cygwin", "ConsoleWindowClass", "", 1)
-    ,App.new("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)    
+    ,App("Cygwin", "ConsoleWindowClass", "", 1)
+    ,App("CygwinX", "cygwin/x X rl-xterm-XTerm-0", "", 1)    
   ]
 
   /**
@@ -249,7 +259,9 @@ class AppFilter {
   } ; end print()
 }
 
-myAppFilter := AppFilter.new()
+
+; myAppFilter := AppFilter.new()
+myAppFilter := AppFilter()
 ;; For debug purpose only
 ;myAppFilter.print()
 
