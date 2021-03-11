@@ -127,8 +127,8 @@ class App {
   
   /**
    * Check if current app may work with Emacs Keybindings together
-   * @return if appFlag is 1, which means the app CANNOT be used with Emacs
-   *         Keybindings (the app is EVIL), return true; otherwise, return false
+   * @return return true if appFlag is 1, which means the app CANNOT be used with Emacs
+   *         Keybindings (the app is EVIL); otherwise, return false
    */
   isEvil() {
     if (this.appFlag == 1)
@@ -145,6 +145,9 @@ class App {
  * 10       Microsoft Office programs (Word & Powerpoint) treat {End} differently
  */
 class AppFilter {
+/**
+ * App Structure: "App Name", "app's ahk_class", "app ahk_exe", appFlag
+ */
   appList := [ 
     App.new("Emacs for Windows", "Emacs", "", 1)
     ;; Console Apps
@@ -155,6 +158,7 @@ class AppFilter {
     ,App.new("Visual Studio Code", "", "Code.exe", 1)
     ,App.new("Visual Studio", "", "devenv.exe", 1)
     ,App.new("Eclipse IDE", "SWT_Window0", "", 1)
+    ,App.new("Netbeans IDE", "", "netbeans64.exe", 1)
 
     ;; Browsers
     ,App.new("Firefox Browser", "MozillaUIWindowClass", "", 1)
@@ -184,7 +188,7 @@ class AppFilter {
    * <p>
    * If the windows/application is in the list, return the app's Flag.
    * @param No parameters
-   * @return number, which means the application's level.
+   * @return number, which means the application's flag.
    */
   shouldDisableEmacsKB(){
     flag := false
@@ -239,7 +243,7 @@ class AppFilter {
    */
   print() { ; Show all target apps in message box. For debug purpose only.
     for (myapp in this.appList) {
-      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", te level is: " myapp.appFlag
+      str := myapp.appName "'s exe file is: " myapp.appExe ", and its window class is: " myapp.appClass ", the flag is: " myapp.appFlag
       MsgBox(str, "Info", "OK Iconi")
     }
   } ; end print()
@@ -273,6 +277,27 @@ delete_backward_char() {
   return
 }
 
+delete_word(){ ; Bind to Alt-d
+  global
+  if (is_pre_spc) { ; If current user is in selection mode, cancel it
+    quit() ; No matter if the user has selected text or merely in the mode
+  }
+  
+  /* Method 1: use forward_word() then Delete or Backspace
+   *          Try to see if there are side effects. cyd@20200829
+   */
+  is_pre_spc := true
+  forward_word() ; Select current word
+  Send "{Del}"  
+  
+  /* Method 2: Send Ctrl-Del direct */
+  /*
+  Send "^{Del}"
+  is_pre_spc := false
+  */
+}
+
+
 /*
  * kill_line() is intercepted from ntemacs.ahk
  */
@@ -305,7 +330,7 @@ quit(){
   Send "{ESC}"
   
   if(is_pre_spc) { ; Cancel the selection mode
-    Send("{Right}") ; Left or Right both are okay. However we cannot obtain where the cursor is.
+    Send("^{Space}") ; Left or Right both are okay. However we cannot obtain where the cursor is.
   }
   ;; All previous states are cleared
   is_pre_spc := 0
@@ -495,16 +520,22 @@ scroll_down(){
 }
 
 /**
- * We use ThisHotkey instead of A_ThisHotkey
+ * We may use ThisHotkey instead of A_ThisHotkey
  * A_ThisHotkey: The most recently executed hotkey or non-auto-replace 
  *               hotstring (blank if none). This value will change if the 
  *               current thread is interrupted by another hotkey or hotstring
  */
+ 
+/**
+ * In AHK 2.0+, Build-in Variables, like A_ThisHotkey can be referenced without "%" pairs
+ * AHK 1.+:  Send %A_ThisHotkey%
+ * AHK 2.+:  Send A_ThisHotkey
+ */ 
 ^a::
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     move_beginning_of_line()
   return
@@ -514,7 +545,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     backward_char()
   return
@@ -524,7 +555,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     backward_word()
@@ -536,7 +567,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     if is_pre_x
@@ -548,17 +579,25 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     delete_char()
   return
 }
 
+!d::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    delete_word()
+}
 ^e::
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     move_end_of_line()
   return
@@ -568,7 +607,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     if is_pre_x
@@ -583,7 +622,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     forward_word()
@@ -595,7 +634,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     quit()
   return
@@ -605,7 +644,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     delete_backward_char()
   return
@@ -615,7 +654,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     indent_for_tab_command()
   return
@@ -623,7 +662,7 @@ scroll_down(){
 
 ;; ^j::
 ;;   if is_target()
-;;     Send %A_ThisHotkey%
+;;     Send (A_ThisHotkey)
 ;;   else
 ;;     newline_and_indent()
 ;;   return
@@ -632,7 +671,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     kill_line()
   return
@@ -642,7 +681,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     newline()
   return
@@ -652,7 +691,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     next_line()
   return
@@ -660,7 +699,7 @@ scroll_down(){
 
 ;; ^o::
 ;;   if is_target()
-;;     Send %A_ThisHotkey%
+;;     Send (A_ThisHotkey)
 ;;   else
 ;;     open_line()
 ;;   return
@@ -669,7 +708,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     previous_line()
   return
@@ -679,7 +718,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     isearch_backward()
   return
@@ -689,7 +728,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     if is_pre_x
@@ -704,7 +743,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     scroll_down()
   return
@@ -714,7 +753,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     scroll_up()
   return
@@ -724,7 +763,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     kill_region()
   return
@@ -733,7 +772,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     kill_ring_save()
   return
@@ -743,8 +782,7 @@ scroll_down(){
 {
   global
   if is_target(){
-    Send %ThisHotkey%
-    ; Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   } else {
     is_pre_x := 1
   }
@@ -755,7 +793,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     yank()
   return
@@ -781,7 +819,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
   {
     if is_pre_spc
@@ -796,7 +834,7 @@ scroll_down(){
 {
   global
   if is_target()
-    Send %A_ThisHotkey%
+    Send (A_ThisHotkey)
   else
     undo()
   return  
@@ -806,12 +844,11 @@ h::  ;Ctrl-x,h  bind to select_all
 {
   global
   if is_target(){
-    ;; In AHK 2.0 alpha, single character is NOT seen as "hotkey". So we cannot use %A_ThisHotkey%
-    Send "h"
+    Send (A_ThisHotkey)
   } else if (is_pre_x) {
       select_all()
   } else {
-      Send "h"
+      Send (A_ThisHotkey)
   }
   return
 }
