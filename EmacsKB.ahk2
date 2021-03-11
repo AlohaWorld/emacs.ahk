@@ -337,6 +337,12 @@ open_line(){
   return
 }
 
+other_window() {
+  Send "^{TAB}"
+  global is_pre_spc := 0
+  return
+}
+
 quit(){
   global
   Send "{ESC}"
@@ -672,13 +678,14 @@ scroll_down(){
   return
 }
 
-;; ^j::
-;;   if is_target()
-;;     Send (A_ThisHotkey)
-;;   else
-;;     newline_and_indent()
-;;   return
-
+^j::
+{
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    newline_and_indent()
+  return
+}
 ^k::
 {
   global
@@ -715,6 +722,20 @@ scroll_down(){
 ;;   else
 ;;     open_line()
 ;;   return
+
+;; C-o key
+;  The original C-o key binding is open-line
+;  However, I bind this key to other-window in emacs, which may switch among emacs windows.
+;  In this script, C-o is bound to C-TAB, which will switch tab pages in current window
+^o::
+{
+  global
+  if is_target()
+    Send (A_ThisHotkey)
+  else
+    other_window()
+  return
+}
 
 ^p::
 {

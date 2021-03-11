@@ -64,7 +64,7 @@ This script develops based upon [[usi3/emacs.ahk][https://github.com/usi3/emacs.
 </tr>
 <tr>
 <td>C-o</td>
-<td>open-line</td>
+<td>other window / swith to next tab page</td>
 </tr>
 <tr>
 <td>C-g</td>
