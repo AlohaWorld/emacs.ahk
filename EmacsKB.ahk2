@@ -3,7 +3,9 @@
  *
  * <p>This work is motivated by usi3's emacs.ahk scrpit.
  * @see <a href="https://github.com/usi3/emacs.ahk">usi3's emacs.ahk</a>
- * 
+ * <p>Some code snippets are taken from "NiftyWindows"
+ * @see <a href="http://www.enovatic.org/products/niftywindows/">NiftyWindows 0.9.3.1</a>
+ *
  * @author <a href="mailto:aloha.world@outlook.com">Yidong Cui</a>
  * @version 1.0.1
  * @since 2020/08/10
@@ -54,19 +56,28 @@
 
 ;; Global Settings
 ;; These settings affect all scripts in this file
- 
+#SingleInstance force
+
 ; The following line is a contribution of NTEmacs wiki http://www49.atwiki.jp/ntemacs/pages/20.html
 ; Sets the delay that will occur after each keystroke sent by Send or 
 ; ControlSend. 
 ; 0 for the smallest possible delay, -1 for no delay at all, leaving blank to 
 ; retain the current Delay
-SetKeyDelay 0
+SetKeyDelay 10
 
 ; Sets the matching behavior of the WinTitle parameter in built-in functions 
 ; such as WinActivaete()
 ; "RegEx": Changes WinTitle, WinText, ExcludeTitle, and ExcludeText to accept 
 ; regular expressions. For example: WinActivate "Untitled.*Notepad".
 SetTitleMatchMode "RegEx"
+
+; [SYS] autostart section
+
+SplitPath(A_ScriptFullPath, &SYS_ScriptNameExt, &SYS_ScriptDir, &SYS_ScriptExt, &SYS_ScriptNameNoExt, &SYS_ScriptDrive)
+SYS_ScriptVersion := "1.0.1"
+SYS_ScriptBuild := "20210325213400"
+SYS_ScriptInfo := SYS_ScriptNameNoExt . SYS_ScriptVersion
+
 
 ;; class App
 ;; This class stands for any applications that needs special treats
@@ -166,7 +177,7 @@ class AppFilter {
 
     ;; Development Apps
     ,App("Visual Studio Code", "", "Code.exe", 1)
-    ,App("Visual Studio", "", "devenv.exe", 1)
+    ; ,App("Visual Studio", "", "devenv.exe", 1)
     ,App("Eclipse IDE", "SWT_Window0", "", 1)
     ,App("Netbeans IDE", "", "netbeans64.exe", 1)
 
@@ -264,6 +275,12 @@ class AppFilter {
 myAppFilter := AppFilter()
 ;; For debug purpose only
 ;myAppFilter.print()
+
+;; class State
+;; This class deal the keyboard modes
+class State {
+
+}
 
 ; turns to be 1 when ctrl-x is pressed
 is_pre_x := 0
@@ -397,7 +414,13 @@ kill_region(){
 
 kill_ring_save()
 {
-  Send "^c"
+  ; Send "^c"
+  ; Using [Send "^c"] will leads to !w intersperses with ^c
+  ; which may send "!c"
+  ; Some recommendations include:
+  ; https://autohotkey.com/board/topic/78660-key-auto-repeating-intersperses-with-sendinput/
+  ; https://stackoverflow.com/questions/33797003/remapping-alt-to-esc
+  SendEvent "^c"
   global is_pre_spc := 0
   return
 }
